@@ -207,8 +207,9 @@ if generer:
                 </table>
             """)
             pdf_zones_text = f"Z1: <{z1[1]}W  |  Z2: {z2[0]}-{z2[1]}W  |  Z3: {z3[0]}-{z3[1]}W  |  Z4: {z4[0]}-{z4[1]}W  |  Z5: {z5[0]}-{z5[1]}W  |  Z6: {z6[0]}-{z6[1]}W"
+            pdf_lexique_text = "FTP: Puissance max tenable sur 1h | PMA: Puissance Max Aérobie (effort de 5 min) | RPM: Cadence de pédalage"
             prompt_style_instruction = "UTILISE LA NOTATION 'Z' (Z1, Z2, Z3...). EXEMPLE : '3 séries de (10 min en Z3 puis 5 min de récup en Z1)'."
-            html_lexique = "<div class='lexique'><strong>📚 GLOSSAIRE:</strong> FTP: Puissance max sur 1h | PMA: Puissance Max Aérobie (5 min) | RPM: Cadence.</div>"
+            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
         else:
             html_zones = textwrap.dedent("""
@@ -224,8 +225,9 @@ if generer:
                 </table>
             """)
             pdf_zones_text = "i1: RPE 1-2 | i2: RPE 3-4 | i3: RPE 5-6 | i4: RPE 7-8 | i5: RPE 9 | i6: RPE 9.5 | i7: RPE 10"
+            pdf_lexique_text = "RPE: Ressenti de l'effort (1=Facile, 10=Effort maximal) | FC: Fréquence Cardiaque | RPM: Cadence de pédalage"
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT 'i' (i1 à i7). EXEMPLE : '3 séries de (10 min en i3 puis 5 min de récup en i1)'."
-            html_lexique = "<div class='lexique'><strong>📚 GLOSSAIRE:</strong> RPE: Ressenti de l'effort (1=Facile, 10=Max) | FC: Fréquence Cardiaque | RPM: Cadence.</div>"
+            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
     else:
         if avec_vma:
@@ -250,8 +252,9 @@ if generer:
                 </table>
             """)
             pdf_zones_text = f"Z1: {z1}km/h | Z2: {z2}km/h | Z3: {z3}km/h | Z4: {z4}km/h | Z5: {z5}km/h (VMA)"
+            pdf_lexique_text = "VMA: Vitesse Max Aérobie (effort tenable 6 min) | EF: Endurance Fondamentale (Z2) | Trot: Allure très lente de récup"
             prompt_style_instruction = "UTILISE LES % VMA ET ALLURES CIBLES. EXEMPLE : '3 séries de (3 min à 90% VMA puis 1 min30 de trot lent)'."
-            html_lexique = "<div class='lexique'><strong>📚 GLOSSAIRE:</strong> VMA: Vitesse Max Aérobie (effort de 6 min) | EF: Endurance Fondamentale (Z2) | Trot: Allure très lente.</div>"
+            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
         else:
             html_zones = textwrap.dedent("""
@@ -267,8 +270,9 @@ if generer:
                 </table>
             """)
             pdf_zones_text = "i1: Trot lent | i2: Endurance (RPE 3-4) | i3: Tempo (RPE 5-6) | i4: Seuil (RPE 7-8) | i5: Fractionné (RPE 9) | i6: Frac. court | i7: Sprint"
+            pdf_lexique_text = "RPE: Ressenti de l'effort (1=Facile, 10=Sprint maximal) | EF: Endurance Fondamentale (i2) | Trot: Allure très lente"
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT LES NIVEAUX 'i' (i1 à i7) OU L'ÉCHELLE RPE. EXEMPLE : '3 séries de (3 min à i4 puis 1 min30 de trot en i1)'."
-            html_lexique = "<div class='lexique'><strong>📚 GLOSSAIRE:</strong> RPE: Ressenti de l'effort (1=Facile, 10=Sprint max) | EF: Endurance Fondamentale (i2).</div>"
+            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
     dispos_str = ", ".join([f"{j}: {h}h" for j, h in jours_dispos.items() if h > 0])
     
@@ -334,8 +338,129 @@ if generer:
 
         status.update(label="✅ Terminé !", state="complete", expanded=False)
         
-        # --- AFFICHAGE WEB ---
+        # ==========================================
+        # 5. GÉNÉRATION DU PDF PRO (Arrière-plan)
+        # ==========================================
+        class PDF(FPDF):
+            def header(self):
+                self.set_fill_color(255, 75, 75)
+                self.rect(0, 0, 210, 18, 'F')
+                self.set_y(6)
+                self.set_font('Arial', 'B', 14)
+                self.set_text_color(255, 255, 255)
+                self.cell(0, 6, "ENDURIA - PLAN D'ENTRAINEMENT SUR-MESURE", 0, 1, 'C')
+                self.ln(10)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font('Arial', 'I', 8)
+                self.set_text_color(150, 150, 150)
+                self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
+            def clean(self, txt):
+                if not txt: return ""
+                txt = str(txt).replace("⏱️", "").replace("🍎", "").replace("⚡", "").replace("🎯", "")
+                return txt.encode('latin-1', 'replace').decode('latin-1')
+
+        pdf = PDF()
+        pdf.add_page()
+        
+        # --- En-tête Titre ---
+        pdf.set_font("Arial", "B", 16)
+        pdf.set_text_color(40, 40, 40)
+        pdf.cell(0, 10, pdf.clean(f"OBJECTIF : {objectif.upper()}"), 0, 1, 'C')
+        
+        pdf.set_font("Arial", "", 11)
+        pdf.set_text_color(100, 100, 100)
+        if sport_principal == "Cyclisme":
+            infos = f"FTP : {ftp}W" if avec_capteur else "Sensations (RPE)"
+        else:
+            infos = f"VMA : {vma} km/h" if avec_vma else "Sensations (RPE)"
+        pdf.cell(0, 6, pdf.clean(f"{sport_principal} | {sport} | {infos}"), 0, 1, 'C')
+        pdf.ln(8)
+        
+        # --- Bloc Zones & Lexique ---
+        pdf.set_fill_color(240, 240, 240)
+        pdf.set_draw_color(200, 200, 200)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_text_color(40, 40, 40)
+        pdf.cell(0, 8, "  VOS ZONES DE TRAVAIL & LEXIQUE", border=1, ln=1, fill=True)
+        
+        # Zones
+        pdf.set_font("Arial", "", 9)
+        pdf.multi_cell(0, 6, pdf.clean(pdf_zones_text), border="LTR")
+        
+        # Lexique en italique juste en dessous
+        pdf.set_font("Arial", "I", 8)
+        pdf.set_text_color(100, 100, 100)
+        pdf.multi_cell(0, 5, pdf.clean("Lexique : " + pdf_lexique_text), border="LBR")
+        pdf.ln(8)
+        
+        # --- Boucle des Semaines ---
+        for week in full_plan['weeks']:
+            if pdf.get_y() > 250: pdf.add_page()
+            
+            num_pdf = week.get('numero', '?')
+            pdf.set_fill_color(50, 50, 50)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, pdf.clean(f"  SEMAINE {num_pdf}"), 0, 1, 'L', fill=True)
+            pdf.ln(3)
+            
+            for seance in week.get('seances', []):
+                if pdf.get_y() > 240: pdf.add_page()
+                
+                pdf.set_fill_color(245, 245, 245)
+                pdf.set_font("Arial", "B", 10)
+                
+                jour_txt = pdf.clean(seance.get('jour', '').upper())
+                duree_txt = pdf.clean(seance.get('duree_totale', ''))
+                titre_txt = pdf.clean(seance.get('titre', ''))
+                
+                pdf.set_text_color(255, 75, 75)
+                pdf.cell(30, 8, f" {jour_txt} ", 0, 0, 'L', fill=True)
+                pdf.set_text_color(40, 40, 40)
+                pdf.cell(0, 8, f"{titre_txt}  |  Durée : {duree_txt}", 0, 1, 'L', fill=True)
+                
+                pdf.set_text_color(230, 120, 0)
+                pdf.set_font("Arial", "B", 9)
+                pdf.cell(30, 6, "", 0, 0) 
+                pdf.cell(0, 6, pdf.clean(f"Nutrition : {seance.get('nutrition', '')}"), 0, 1)
+                
+                pdf.set_text_color(60, 60, 60)
+                pdf.set_font("Arial", "", 9)
+                details_pdf = seance.get('details', ["Non spécifié"])
+                
+                if isinstance(details_pdf, list):
+                    for step in details_pdf:
+                        pdf.set_x(40)
+                        pdf.multi_cell(0, 5, pdf.clean(f"- {step}"))
+                else:
+                    pdf.set_x(40)
+                    pdf.multi_cell(0, 5, pdf.clean(details_pdf))
+                    
+                pdf.ln(4)
+
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        
+        # ==========================================
+        # 6. AFFICHAGE DU BOUTON TÉLÉCHARGEMENT (EN HAUT)
+        # ==========================================
         st.divider()
+        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez ou rafraîchissez cette page, votre plan sera perdu.")
+        st.download_button(
+            label="📥 TÉLÉCHARGER LE PDF DU PLAN",
+            data=pdf_bytes,
+            file_name=f"EndurIA_Plan_{sport_principal}.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
+        st.divider()
+
+        # ==========================================
+        # 7. AFFICHAGE WEB (EN BAS)
+        # ==========================================
         st.markdown(f"""
         <div class="preambule-box">
             <h3 style="margin-top:0;">📊 VOS ZONES & LEXIQUE</h3>
@@ -364,126 +489,6 @@ if generer:
                                 <div class="seance-steps"><ul>{steps_html}</ul></div>
                             </div>
                             """, unsafe_allow_html=True)
-
-        # ==========================================
-        # 5. GÉNÉRATION DU PDF PRO
-        # ==========================================
-        class PDF(FPDF):
-            def header(self):
-                # Bandeau rouge haut
-                self.set_fill_color(255, 75, 75)
-                self.rect(0, 0, 210, 18, 'F')
-                self.set_y(6)
-                self.set_font('Arial', 'B', 14)
-                self.set_text_color(255, 255, 255)
-                self.cell(0, 6, "ENDURIA - PLAN D'ENTRAINEMENT SUR-MESURE", 0, 1, 'C')
-                self.ln(10)
-
-            def footer(self):
-                # Numéro de page en bas
-                self.set_y(-15)
-                self.set_font('Arial', 'I', 8)
-                self.set_text_color(150, 150, 150)
-                self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-
-            def clean(self, txt):
-                if not txt: return ""
-                # Supprime les emojis qui font planter le PDF
-                txt = str(txt).replace("⏱️", "").replace("🍎", "").replace("⚡", "").replace("🎯", "")
-                return txt.encode('latin-1', 'replace').decode('latin-1')
-
-        pdf = PDF()
-        pdf.add_page()
-        
-        # --- En-tête Titre ---
-        pdf.set_font("Arial", "B", 16)
-        pdf.set_text_color(40, 40, 40)
-        pdf.cell(0, 10, pdf.clean(f"OBJECTIF : {objectif.upper()}"), 0, 1, 'C')
-        
-        # Sous-titre
-        pdf.set_font("Arial", "", 11)
-        pdf.set_text_color(100, 100, 100)
-        if sport_principal == "Cyclisme":
-            infos = f"FTP : {ftp}W" if avec_capteur else "Sensations (RPE)"
-        else:
-            infos = f"VMA : {vma} km/h" if avec_vma else "Sensations (RPE)"
-        pdf.cell(0, 6, pdf.clean(f"{sport_principal} | {sport} | {infos}"), 0, 1, 'C')
-        pdf.ln(8)
-        
-        # --- Bloc Zones ---
-        pdf.set_fill_color(240, 240, 240)
-        pdf.set_draw_color(200, 200, 200)
-        pdf.set_font("Arial", "B", 10)
-        pdf.set_text_color(40, 40, 40)
-        pdf.cell(0, 8, "  VOS ZONES DE TRAVAIL", border=1, ln=1, fill=True)
-        pdf.set_font("Arial", "", 9)
-        pdf.multi_cell(0, 6, pdf.clean(pdf_zones_text), border=1)
-        pdf.ln(8)
-        
-        # --- Boucle des Semaines ---
-        for week in full_plan['weeks']:
-            if pdf.get_y() > 250: pdf.add_page()
-            
-            num_pdf = week.get('numero', '?')
-            
-            # Titre Semaine (Gris foncé)
-            pdf.set_fill_color(50, 50, 50)
-            pdf.set_text_color(255, 255, 255)
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, pdf.clean(f"  SEMAINE {num_pdf}"), 0, 1, 'L', fill=True)
-            pdf.ln(3)
-            
-            for seance in week.get('seances', []):
-                if pdf.get_y() > 240: pdf.add_page()
-                
-                # En-tête de la séance (Gris clair)
-                pdf.set_fill_color(245, 245, 245)
-                pdf.set_font("Arial", "B", 10)
-                
-                jour_txt = pdf.clean(seance.get('jour', '').upper())
-                duree_txt = pdf.clean(seance.get('duree_totale', ''))
-                titre_txt = pdf.clean(seance.get('titre', ''))
-                
-                # Jour
-                pdf.set_text_color(255, 75, 75) # Rouge
-                pdf.cell(30, 8, f" {jour_txt} ", 0, 0, 'L', fill=True)
-                
-                # Titre + Durée
-                pdf.set_text_color(40, 40, 40)
-                pdf.cell(0, 8, f"{titre_txt}  |  Durée : {duree_txt}", 0, 1, 'L', fill=True)
-                
-                # Nutrition
-                pdf.set_text_color(230, 120, 0) # Orange
-                pdf.set_font("Arial", "B", 9)
-                pdf.cell(30, 6, "", 0, 0) # Espace pour aligner
-                pdf.cell(0, 6, pdf.clean(f"Nutrition : {seance.get('nutrition', '')}"), 0, 1)
-                
-                # Détails
-                pdf.set_text_color(60, 60, 60)
-                pdf.set_font("Arial", "", 9)
-                details_pdf = seance.get('details', ["Non spécifié"])
-                
-                if isinstance(details_pdf, list):
-                    for step in details_pdf:
-                        pdf.set_x(40) # Aligner avec le texte
-                        pdf.multi_cell(0, 5, pdf.clean(f"- {step}"))
-                else:
-                    pdf.set_x(40)
-                    pdf.multi_cell(0, 5, pdf.clean(details_pdf))
-                    
-                pdf.ln(4)
-
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        
-        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez ou rafraîchissez cette page, votre plan sera perdu.")
-        st.download_button(
-            label="📥 TÉLÉCHARGER LE PDF DU PLAN",
-            data=pdf_bytes,
-            file_name=f"EndurIA_Plan_{sport_principal}.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
 
     except Exception as e:
         st.error(f"Une erreur est survenue : {e}")
