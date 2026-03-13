@@ -156,7 +156,7 @@ if a_paye:
 else:
     st.info("💡 Pour générer votre plan d'entraînement sur-mesure, vous devez débloquer l'accès.")
     st.markdown("""
-    **Ce que vous obtenez (19€) :**
+    **Ce que vous obtenez (4,99€) :**
     * 🎯 Un plan ultra-personnalisé de 4 à 52 semaines généré par IA.
     * ⏱️ Une adaptation parfaite à vos disponibilités et votre niveau.
     * 🍎 Des conseils nutritionnels précis pour chaque séance.
@@ -164,7 +164,7 @@ else:
     """)
     
     LIEN_STRIPE = "https://buy.stripe.com/test_28E14oco2gZvaTN8l17Re00" 
-    st.link_button("💳 DÉBLOQUER MON PLAN (19€) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
+    st.link_button("💳 DÉBLOQUER MON PLAN (4,99€) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
     st.caption("🔒 Paiement 100% sécurisé via Stripe. Vous serez redirigé automatiquement ici après le paiement.")
     generer = False
 
