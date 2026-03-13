@@ -67,7 +67,6 @@ with st.sidebar:
     st.title("EndurIA")
     st.markdown("---")
     
-    # SÉLECTION DU SPORT PRINCIPAL
     sport_principal = st.radio("Quel est votre sport ?", ["Cyclisme", "Course à pied"])
     st.markdown("---")
     
@@ -87,7 +86,7 @@ with st.sidebar:
             ftp = None
             st.info("Le plan sera basé sur vos sensations (1-10).")
             
-    else:  # Course à pied
+    else:  
         sport = st.selectbox("Discipline", ["Course sur route", "Trail", "Ultra trail"])
         sexe = st.radio("Sexe", ["Homme", "Femme"])
         
@@ -111,7 +110,7 @@ with st.sidebar:
     ])
     
     st.markdown("### 📅 Disponibilités")
-    st.caption("Indiquez le nombre d'heures où vous êtes disponible chaque jour (Laissez 0 si indisponible).")
+    st.caption("Indiquez le nombre d'heures où vous êtes disponible chaque jour.")
     
     jours_dispos = {}
     cols_d = st.columns(2)
@@ -137,9 +136,7 @@ with st.sidebar:
 
 st.title(f"PLANIFICATION {sport.upper()}")
 
-# --- VÉRIFICATION DU PAIEMENT SÉCURISÉ ---
 TOKEN_SECRET = "PROCOACH2026SECURE" 
-
 parametres_url = st.query_params
 a_paye = parametres_url.get("token") == TOKEN_SECRET
 
@@ -147,19 +144,17 @@ if a_paye:
     st.success("✅ Accès débloqué ! Configurez votre objectif ci-dessous pour générer votre plan.")
     
     if sport_principal == "Cyclisme":
-        label_objectif = "Objectif (Exemples : \"Gagner une course open 3 FFC\", \"Faire la meilleure performance possible à l'étape du Tour 2026 (Cyclosportive)\", \"Pouvoir faire une sortie de 4h\"...)"
+        label_objectif = "Objectif (Exemples : \"Gagner une course open 3 FFC\", \"Faire la meilleure performance possible à l'étape du Tour 2026 (Cyclosportive)\"...)"
         default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
     else:
-        label_objectif = "Objectif (Exemples : \"Faire moins de 40min au 10km\", \"Pouvoir courir 1h sans m'arrêter\", \"Faire un marathon en moins de 3h30\"...)"
+        label_objectif = "Objectif (Exemples : \"Faire moins de 40min au 10km\", \"Pouvoir courir 1h sans m'arrêter\"...)"
         default_objectif = "Faire un semi-marathon en moins d'1h30"
 
     objectif = st.text_input(label_objectif, default_objectif)
-
     generer = st.button("⚡ GÉNÉRER LA STRUCTURE DU PLAN", type="primary", use_container_width=True)
 
 else:
     st.info("💡 Pour générer votre plan d'entraînement sur-mesure, vous devez débloquer l'accès.")
-    
     st.markdown("""
     **Ce que vous obtenez (19€) :**
     * 🎯 Un plan ultra-personnalisé de 4 à 52 semaines généré par IA.
@@ -168,118 +163,124 @@ else:
     * 📥 Un fichier PDF complet de votre programme prêt à être téléchargé.
     """)
     
-    # REMPLACE CETTE URL PAR TON VRAI LIEN DE PAIEMENT STRIPE QUAND TU ES PRET
     LIEN_STRIPE = "https://buy.stripe.com/TON_LIEN_STRIPE_ICI" 
-    
     st.link_button("💳 DÉBLOQUER MON PLAN (19€) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
     st.caption("🔒 Paiement 100% sécurisé via Stripe. Vous serez redirigé automatiquement ici après le paiement.")
-    
     generer = False
 
 # ==========================================
-# 4. LOGIQUE MÉTIER & GÉNÉRATION PDF
+# 4. LOGIQUE MÉTIER & DONNÉES ZONES/LEXIQUE
 # ==========================================
 
 if generer:
     client = OpenAI(api_key=MA_CLE_SECRETE)
     
-    # --- DÉFINITION DES ZONES SELON LE SPORT ET LE MODE ---
+    # --- PRÉPARATION DES DONNÉES (POUR WEB ET PDF) ---
     if sport_principal == "Cyclisme":
         if avec_capteur:
-            z1 = [0, int(ftp * 0.55)]
-            z2 = [int(ftp * 0.56), int(ftp * 0.75)]
-            z3 = [int(ftp * 0.76), int(ftp * 0.90)]
-            z4 = [int(ftp * 0.91), int(ftp * 1.05)]
-            z5 = [int(ftp * 1.06), int(ftp * 1.20)]
-            z6 = [int(ftp * 1.21), int(ftp * 1.50)]
+            z1 = [0, int(ftp * 0.55)]; z2 = [int(ftp * 0.56), int(ftp * 0.75)]
+            z3 = [int(ftp * 0.76), int(ftp * 0.90)]; z4 = [int(ftp * 0.91), int(ftp * 1.05)]
+            z5 = [int(ftp * 1.06), int(ftp * 1.20)]; z6 = [int(ftp * 1.21), int(ftp * 1.50)]
             z7 = [int(ftp * 1.51), 9999]
 
-            html_zones = textwrap.dedent(f"""
-                <table class="zone-table">
-                <tr><th>Zone</th><th>Nom</th><th>Vos Watts</th><th>Durée Tenable</th><th>Sensations</th></tr>
-                <tr class="z1"><td><strong>Z1</strong></td><td>Récup Active</td><td>< {z1[1]} W</td><td>sans limite</td><td>Très facile ; respiration uniquement par le nez sans souci.</td></tr>
-                <tr class="z2"><td><strong>Z2</strong></td><td>Endurance</td><td>{z2[0]} - {z2[1]} W</td><td>3h à 10h selon le niveau</td><td>Aisance respiratoire, tu peux tenir une discussion facilement.</td></tr>
-                <tr class="z3"><td><strong>Z3</strong></td><td>Tempo</td><td>{z3[0]} - {z3[1]} W</td><td>45min à 3h selon le niveau</td><td>Respiration clairement marqué, les phrases doivent être courtes.</td></tr>
-                <tr class="z4"><td><strong>Z4</strong></td><td>Seuil</td><td>{z4[0]} - {z4[1]} W</td><td>20min à 60min</td><td>Conversation impossible, juste "oui" ou "non", brûlure musculaire.</td></tr>
-                <tr class="z5"><td><strong>Z5</strong></td><td>PMA</td><td>{z5[0]} - {z5[1]} W</td><td>3min à 8min</td><td>Respiration haletante. Compte à rebours mental.</td></tr>
-                <tr class="z6"><td><strong>Z6</strong></td><td>Anaérobie</td><td>{z6[0]} - {z6[1]} W</td><td>30sec à 3min</td><td>Effort violent, attaque prolongée, clairement à fond.</td></tr>
-                <tr class="z7"><td><strong>Z7</strong></td><td>Sprint</td><td>> {z7[0]} W</td><td>< 5 à 30sec</td><td>Explosivité pure. Sprint très court. Force maximum.</td></tr>
-                </table>
-            """)
-            pdf_zones_text = f"Z1: <{z1[1]}W  |  Z2: {z2[0]}-{z2[1]}W  |  Z3: {z3[0]}-{z3[1]}W  |  Z4: {z4[0]}-{z4[1]}W  |  Z5: {z5[0]}-{z5[1]}W  |  Z6: {z6[0]}-{z6[1]}W"
-            pdf_lexique_text = "FTP: Puissance max tenable sur 1h | PMA: Puissance Max Aérobie (effort de 5 min) | RPM: Cadence de pédalage"
+            headers_zones = ["Zone", "Nom", "Vos Watts", "Durée Tenable", "Sensations"]
+            data_zones = [
+                ["Z1", "Récup Active", f"< {z1[1]} W", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
+                ["Z2", "Endurance", f"{z2[0]} - {z2[1]} W", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
+                ["Z3", "Tempo", f"{z3[0]} - {z3[1]} W", "45min à 3h", "Respiration clairement marquée, les phrases doivent être courtes, tu sens les jambes travailler. Exemple : ascension d'un long col."],
+                ["Z4", "Seuil", f"{z4[0]} - {z4[1]} W", "20min à 60min", "Conversation impossible, juste 'oui' ou 'non', brûlure musculaire mais pas à fond. Exemple : col court."],
+                ["Z5", "PMA", f"{z5[0]} - {z5[1]} W", "3min à 8min", "Respiration haletante. Compte à rebours mental. Exemple : bosse à bloc en course."],
+                ["Z6", "Anaérobie", f"{z6[0]} - {z6[1]} W", "30sec à 3min", "Effort violent, attaque prolongée, clairement à fond sur plus ou moins 1 minute."],
+                ["Z7", "Sprint", f"> {z7[0]} W", "< 30sec", "Explosivité pure. Sprint très court. Force maximum sur durée extrêmement courte."]
+            ]
+            data_lexique = [
+                ("FTP", "Puissance maximale tenable sur 1 heure."),
+                ("PMA", "Puissance Maximale Aérobie (effort max de 5 min)."),
+                ("RPM", "Tours de pédale par minute (Cadence).")
+            ]
             prompt_style_instruction = "UTILISE LA NOTATION 'Z' (Z1, Z2, Z3...). EXEMPLE : '3 séries de (10 min en Z3 puis 5 min de récup en Z1)'."
-            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
         else:
-            html_zones = textwrap.dedent("""
-                <table class="zone-table">
-                <tr><th>Zone</th><th>Intensité</th><th>RPE (1-10)</th><th>Durée Tenable</th><th>Sensations</th></tr>
-                <tr class="z1"><td><strong>i1</strong></td><td>Récupération</td><td>1-2</td><td>sans limite</td><td>Très facile ; respiration uniquement par le nez sans souci.</td></tr>
-                <tr class="z2"><td><strong>i2</strong></td><td>Endurance</td><td>3-4</td><td>3h à 10h</td><td>Aisance respiratoire, tu peux tenir une discussion facilement.</td></tr>
-                <tr class="z3"><td><strong>i3</strong></td><td>Tempo</td><td>5-6</td><td>45min à 3h</td><td>Respiration clairement marqué, les phrases doivent être courtes.</td></tr>
-                <tr class="z4"><td><strong>i4</strong></td><td>Seuil</td><td>7-8</td><td>20min à 60min</td><td>Conversation impossible, juste "oui" ou "non".</td></tr>
-                <tr class="z5"><td><strong>i5</strong></td><td>PMA</td><td>9</td><td>3min à 8min</td><td>Respiration haletante. Compte à rebours mental.</td></tr>
-                <tr class="z6"><td><strong>i6</strong></td><td>Anaérobie</td><td>9.5</td><td>30sec à 3min</td><td>Effort violent, attaque prolongée, clairement à fond.</td></tr>
-                <tr class="z7"><td><strong>i7</strong></td><td>Sprint</td><td>10</td><td>< 30 sec</td><td>Explosivité pure. Sprint très court. Force maximum.</td></tr>
-                </table>
-            """)
-            pdf_zones_text = "i1: RPE 1-2 | i2: RPE 3-4 | i3: RPE 5-6 | i4: RPE 7-8 | i5: RPE 9 | i6: RPE 9.5 | i7: RPE 10"
-            pdf_lexique_text = "RPE: Ressenti de l'effort (1=Facile, 10=Effort maximal) | FC: Fréquence Cardiaque | RPM: Cadence de pédalage"
+            headers_zones = ["Zone", "Intensité", "RPE (1-10)", "Durée Tenable", "Sensations"]
+            data_zones = [
+                ["i1", "Récupération", "1-2", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
+                ["i2", "Endurance", "3-4", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
+                ["i3", "Tempo", "5-6", "45min à 3h", "Respiration clairement marquée, les phrases doivent être courtes, tu sens les jambes travailler. Exemple : ascension d'un long col."],
+                ["i4", "Seuil", "7-8", "20min à 60min", "Conversation impossible, juste 'oui' ou 'non', brûlure musculaire mais pas à fond. Exemple : col court."],
+                ["i5", "PMA", "9", "3min à 8min", "Respiration haletante. Compte à rebours mental. Exemple : bosse à bloc en course."],
+                ["i6", "Anaérobie", "9.5", "30sec à 3min", "Effort violent, attaque prolongée, clairement à fond sur plus ou moins 1 minute."],
+                ["i7", "Sprint", "10", "< 30 sec", "Explosivité pure. Sprint très court. Force maximum sur durée extrêmement courte."]
+            ]
+            data_lexique = [
+                ("RPE", "Ressenti de l'effort (1 = Facile, 10 = Extrême)."),
+                ("FC", "Fréquence Cardiaque (BPM)."),
+                ("RPM", "Cadence de pédalage.")
+            ]
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT 'i' (i1 à i7). EXEMPLE : '3 séries de (10 min en i3 puis 5 min de récup en i1)'."
-            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
     else:
         if avec_vma:
-            z1 = f"<{round(vma*0.65, 1)}"
-            z2 = f"{round(vma*0.65, 1)} - {round(vma*0.75, 1)}"
-            z3 = f"{round(vma*0.75, 1)} - {round(vma*0.85, 1)}"
-            z4 = f"{round(vma*0.85, 1)} - {round(vma*0.90, 1)}"
-            z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)}"
-            z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)}"
+            z1 = f"<{round(vma*0.65, 1)}"; z2 = f"{round(vma*0.65, 1)} - {round(vma*0.75, 1)}"
+            z3 = f"{round(vma*0.75, 1)} - {round(vma*0.85, 1)}"; z4 = f"{round(vma*0.85, 1)} - {round(vma*0.90, 1)}"
+            z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)}"; z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)}"
             z7 = f">{round(vma*1.10, 1)}"
 
-            html_zones = textwrap.dedent(f"""
-                <table class="zone-table">
-                <tr><th>Zone</th><th>Nom</th><th>% VMA</th><th>Vitesse (km/h)</th><th>Sensations</th></tr>
-                <tr class="z1"><td><strong>Z1</strong></td><td>Récupération</td><td>< 65%</td><td>{z1}</td><td>Trot très lent, aucune fatigue, respiration nasale aisée.</td></tr>
-                <tr class="z2"><td><strong>Z2</strong></td><td>Endurance Fond.</td><td>65-75%</td><td>{z2}</td><td>Aisance respiratoire totale, conversation parfaitement fluide.</td></tr>
-                <tr class="z3"><td><strong>Z3</strong></td><td>Tempo / Marathon</td><td>75-85%</td><td>{z3}</td><td>Respiration plus rythmée, phrases courtes possibles.</td></tr>
-                <tr class="z4"><td><strong>Z4</strong></td><td>Seuil Anaérobie</td><td>85-90%</td><td>{z4}</td><td>Conversation impossible, effort difficile mais constant.</td></tr>
-                <tr class="z5"><td><strong>Z5</strong></td><td>VMA Longue</td><td>90-100%</td><td>{z5}</td><td>Effort très dur, hyperventilation.</td></tr>
-                <tr class="z6"><td><strong>Z6</strong></td><td>VMA Courte</td><td>100-110%</td><td>{z6}</td><td>Allure maximale sur des fractions courtes.</td></tr>
-                <tr class="z7"><td><strong>Z7</strong></td><td>Sprint</td><td>> 110%</td><td>{z7}</td><td>Sprint pur, vitesse maximale sur quelques secondes.</td></tr>
-                </table>
-            """)
-            pdf_zones_text = f"Z1: {z1}km/h | Z2: {z2}km/h | Z3: {z3}km/h | Z4: {z4}km/h | Z5: {z5}km/h (VMA)"
-            pdf_lexique_text = "VMA: Vitesse Max Aérobie (effort tenable 6 min) | EF: Endurance Fondamentale (Z2) | Trot: Allure très lente de récup"
+            headers_zones = ["Zone", "Nom", "% VMA", "Vitesse (km/h)", "Sensations"]
+            data_zones = [
+                ["Z1", "Récupération", "< 65%", z1, "Trot très lent, aucune fatigue, respiration nasale aisée."],
+                ["Z2", "Endurance Fondamentale", "65-75%", z2, "Aisance respiratoire totale, conversation parfaitement fluide."],
+                ["Z3", "Tempo / Allure Marathon", "75-85%", z3, "Respiration plus rythmée, phrases courtes possibles, foulée dynamique."],
+                ["Z4", "Seuil Anaérobie", "85-90%", z4, "Allure semi-marathon/10km. Conversation impossible (mots isolés), effort difficile mais constant."],
+                ["Z5", "VMA Longue", "90-100%", z5, "Effort très dur, hyperventilation, tenable sur des fractions de 3 à 6 minutes."],
+                ["Z6", "VMA Courte", "100-110%", z6, "Allure maximale sur des fractions courtes (30s à 1min30)."],
+                ["Z7", "Sprint", "> 110%", z7, "Sprint pur, vitesse maximale sur quelques secondes."]
+            ]
+            data_lexique = [
+                ("VMA", "Vitesse Maximale Aérobie. Allure tenable sur environ 6 minutes."),
+                ("EF", "Endurance Fondamentale (Z2). L'allure de base de la plupart des footings."),
+                ("Trot / Récup", "Allure très lente pour récupérer entre deux efforts intenses.")
+            ]
             prompt_style_instruction = "UTILISE LES % VMA ET ALLURES CIBLES. EXEMPLE : '3 séries de (3 min à 90% VMA puis 1 min30 de trot lent)'."
-            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
         else:
-            html_zones = textwrap.dedent("""
-                <table class="zone-table">
-                <tr><th>Niveau</th><th>Intensité</th><th>RPE (1-10)</th><th>Durée Tenable</th><th>Sensations</th></tr>
-                <tr class="z1"><td><strong>i1</strong></td><td>Récupération</td><td>1-2</td><td>sans limite</td><td>Trot très lent, aucune fatigue.</td></tr>
-                <tr class="z2"><td><strong>i2</strong></td><td>Endurance Fond.</td><td>3-4</td><td>plusieurs heures</td><td>Aisance respiratoire totale, conversation fluide.</td></tr>
-                <tr class="z3"><td><strong>i3</strong></td><td>Tempo</td><td>5-6</td><td>1h à 3h</td><td>Respiration rythmée, phrases courtes.</td></tr>
-                <tr class="z4"><td><strong>i4</strong></td><td>Seuil Anaérobie</td><td>7-8</td><td>30min à 1h</td><td>Effort confortablement difficile, mots isolés.</td></tr>
-                <tr class="z5"><td><strong>i5</strong></td><td>Fractionné Long</td><td>9</td><td>3min à 6min</td><td>Très difficile. Souffle court, hyperventilation.</td></tr>
-                <tr class="z6"><td><strong>i6</strong></td><td>Fractionné Court</td><td>9.5</td><td>30sec à 2min</td><td>Effort quasi-maximal.</td></tr>
-                <tr class="z7"><td><strong>i7</strong></td><td>Sprint</td><td>10</td><td>< 20 sec</td><td>Vitesse maximale absolue.</td></tr>
-                </table>
-            """)
-            pdf_zones_text = "i1: Trot lent | i2: Endurance (RPE 3-4) | i3: Tempo (RPE 5-6) | i4: Seuil (RPE 7-8) | i5: Fractionné (RPE 9) | i6: Frac. court | i7: Sprint"
-            pdf_lexique_text = "RPE: Ressenti de l'effort (1=Facile, 10=Sprint maximal) | EF: Endurance Fondamentale (i2) | Trot: Allure très lente"
+            headers_zones = ["Niveau", "Intensité", "RPE (1-10)", "Durée Tenable", "Sensations (Test de la parole)"]
+            data_zones = [
+                ["i1", "Récupération", "1-2", "sans limite", "Trot très lent, aucune fatigue, on peut chanter ou parler sans problème."],
+                ["i2", "Endurance Fondamentale", "3-4", "plusieurs heures", "Aisance respiratoire totale, conversation fluide avec d'autres coureurs."],
+                ["i3", "Tempo / Allure modérée", "5-6", "1h à 3h", "Respiration rythmée, on ne peut dire que des phrases courtes."],
+                ["i4", "Seuil Anaérobie", "7-8", "30min à 1h", "Effort 'confortablement difficile'. On ne dit que des mots isolés ('Oui', 'Non')."],
+                ["i5", "Fractionné Long", "9", "3min à 6min", "Très difficile. Souffle court, hyperventilation."],
+                ["i6", "Fractionné Court", "9.5", "30sec à 2min", "Effort quasi-maximal."],
+                ["i7", "Sprint", "10", "< 20 sec", "Vitesse maximale absolue."]
+            ]
+            data_lexique = [
+                ("RPE", "Ressenti de l'effort (1 = Facile, 10 = Sprint max)."),
+                ("Fractionné", "Entraînement alternant périodes d'efforts intenses et récupérations."),
+                ("EF", "Endurance Fondamentale (i2). L'allure de base.")
+            ]
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT LES NIVEAUX 'i' (i1 à i7) OU L'ÉCHELLE RPE. EXEMPLE : '3 séries de (3 min à i4 puis 1 min30 de trot en i1)'."
-            html_lexique = f"<div class='lexique'><strong>📚 GLOSSAIRE:</strong> {pdf_lexique_text}.</div>"
 
+    # --- GÉNÉRATION HTML POUR LE WEB ---
+    html_zones = '<table class="zone-table"><tr>'
+    for h in headers_zones: html_zones += f"<th>{h}</th>"
+    html_zones += "</tr>"
+    for i, row in enumerate(data_zones):
+        html_zones += f'<tr class="z{i+1}">'
+        for j, cell in enumerate(row):
+            html_zones += f"<td><strong>{cell}</strong></td>" if j==0 else f"<td>{cell}</td>"
+        html_zones += "</tr>"
+    html_zones += "</table>"
+
+    html_lexique = '<div class="lexique"><strong>📚 GLOSSAIRE :</strong><br>'
+    for item in data_lexique:
+        html_lexique += f"<strong>{item[0]}</strong> : {item[1]}<br>"
+    html_lexique += "</div>"
+
+    # --- APPEL OPENAI ---
     dispos_str = ", ".join([f"{j}: {h}h" for j, h in jours_dispos.items() if h > 0])
-    
     full_plan = {"titre": f"Prépa {objectif}", "weeks": []}
     taille_bloc = 4 
     nombre_blocs = math.ceil(duree_plan / taille_bloc)
-    
     progress_bar = st.progress(0)
     status = st.status("🧠 Analyse des disponibilités et rédaction du plan...", expanded=True)
     
@@ -287,21 +288,17 @@ if generer:
         for i in range(nombre_blocs):
             start_w = i * taille_bloc + 1
             end_w = min((i + 1) * taille_bloc, duree_plan)
-            nb_semaines_bloc = end_w - start_w + 1
             
             status.write(f"Rédaction du bloc semaines {start_w} à {end_w}...")
             
             prompt = f"""
             Tu es un coach expert en {sport_principal} ({sport}).
             Athlète : {sexe}, Niveau : {niveau}.
-            Disponibilités EXACTES de l'athlète : {dispos_str}.
-            Objectif : {objectif}.
+            Disponibilités EXACTES : {dispos_str}. Objectif : {objectif}.
             
             MISSION : Génère un plan pour les semaines {start_w} à {end_w}.
-            
-            RÈGLES DE REDACTION :
             1. DÉTERMINISME ABSOLU : Temps, intensité et répétitions précis.
-            2. FORMAT : La liste 'details' contient des phrases (Echauffement, séries, Retour au calme).
+            2. FORMAT : La liste 'details' contient des phrases.
             3. NOMENCLATURE : {prompt_style_instruction}
             4. REPOS : Génère une séance pour chaque jour dispo. Si repos nécessaire, titre "Repos" avec nutrition "Hydratation".
             
@@ -312,11 +309,8 @@ if generer:
                   "numero": {start_w},
                   "seances": [
                      {{
-                       "jour": "Mardi", 
-                       "titre": "Endurance", 
-                       "duree_totale": "1h30",
-                       "nutrition": "60g glucides/h",
-                       "details": ["Echauffement...", "Corps de séance...", "Retour au calme..."]
+                       "jour": "Mardi", "titre": "Endurance", "duree_totale": "1h30",
+                       "nutrition": "60g glucides/h", "details": ["Echauffement...", "Corps...", "Retour..."]
                      }}
                   ]
                 }}
@@ -372,28 +366,47 @@ if generer:
         
         pdf.set_font("Arial", "", 11)
         pdf.set_text_color(100, 100, 100)
-        if sport_principal == "Cyclisme":
-            infos = f"FTP : {ftp}W" if avec_capteur else "Sensations (RPE)"
-        else:
-            infos = f"VMA : {vma} km/h" if avec_vma else "Sensations (RPE)"
+        infos = f"FTP : {ftp}W" if (sport_principal=="Cyclisme" and avec_capteur) else (f"VMA : {vma} km/h" if (sport_principal=="Course à pied" and avec_vma) else "Sensations (RPE)")
         pdf.cell(0, 6, pdf.clean(f"{sport_principal} | {sport} | {infos}"), 0, 1, 'C')
         pdf.ln(8)
         
-        # --- Bloc Zones & Lexique ---
+        # --- Bloc Zones COMPLET (Identique au site) ---
         pdf.set_fill_color(240, 240, 240)
         pdf.set_draw_color(200, 200, 200)
         pdf.set_font("Arial", "B", 10)
         pdf.set_text_color(40, 40, 40)
-        pdf.cell(0, 8, "  VOS ZONES DE TRAVAIL & LEXIQUE", border=1, ln=1, fill=True)
+        pdf.cell(0, 8, "  VOS ZONES DE TRAVAIL", border=1, ln=1, fill=True)
+        pdf.ln(2)
+
+        for row in data_zones:
+            # Ligne avec fond gris clair (Zone | Nom | Valeur | Durée)
+            pdf.set_font("Arial", "B", 9)
+            pdf.set_fill_color(250, 250, 250)
+            pdf.set_text_color(255, 75, 75)
+            pdf.cell(15, 6, pdf.clean(row[0]), border="LTB", align='C', fill=True)
+            
+            pdf.set_text_color(40, 40, 40)
+            info_str = f" {row[1]}   |   {row[2]}   |   {row[3]}"
+            pdf.cell(0, 6, pdf.clean(info_str), border="RTB", ln=1, fill=True)
+            
+            # Ligne descriptive en dessous (Sensations)
+            pdf.set_font("Arial", "", 9)
+            pdf.set_text_color(80, 80, 80)
+            pdf.multi_cell(0, 5, pdf.clean(f"Sensations : {row[4]}"), border="LBR")
+            pdf.ln(2)
+
+        # --- Bloc Lexique COMPLET (Identique au site) ---
+        pdf.set_fill_color(240, 240, 240)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_text_color(40, 40, 40)
+        pdf.cell(0, 8, "  GLOSSAIRE", border=1, ln=1, fill=True)
+        pdf.ln(2)
         
-        # Zones
-        pdf.set_font("Arial", "", 9)
-        pdf.multi_cell(0, 6, pdf.clean(pdf_zones_text), border="LTR")
-        
-        # Lexique en italique juste en dessous
-        pdf.set_font("Arial", "I", 8)
-        pdf.set_text_color(100, 100, 100)
-        pdf.multi_cell(0, 5, pdf.clean("Lexique : " + pdf_lexique_text), border="LBR")
+        for item in data_lexique:
+            pdf.set_font("Arial", "B", 9)
+            pdf.cell(30, 6, pdf.clean(item[0]), 0, 0)
+            pdf.set_font("Arial", "", 9)
+            pdf.multi_cell(0, 6, pdf.clean(f": {item[1]}"))
         pdf.ln(8)
         
         # --- Boucle des Semaines ---
