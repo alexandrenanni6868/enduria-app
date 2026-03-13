@@ -220,10 +220,11 @@ if generer:
 
     else:
         if avec_vma:
-            z1 = f"<{round(vma*0.65, 1)}"; z2 = f"{round(vma*0.65, 1)} - {round(vma*0.75, 1)}"
-            z3 = f"{round(vma*0.75, 1)} - {round(vma*0.85, 1)}"; z4 = f"{round(vma*0.85, 1)} - {round(vma*0.90, 1)}"
-            z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)}"; z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)}"
-            z7 = f">{round(vma*1.10, 1)}"
+            # AJOUT DU " km/h" ICI 👇
+            z1 = f"<{round(vma*0.65, 1)} km/h"; z2 = f"{round(vma*0.65, 1)} - {round(vma*0.75, 1)} km/h"
+            z3 = f"{round(vma*0.75, 1)} - {round(vma*0.85, 1)} km/h"; z4 = f"{round(vma*0.85, 1)} - {round(vma*0.90, 1)} km/h"
+            z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)} km/h"; z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)} km/h"
+            z7 = f">{round(vma*1.10, 1)} km/h"
 
             headers_zones = ["Zone", "Nom", "% VMA", "Vitesse (km/h)", "Sensations"]
             data_zones = [
