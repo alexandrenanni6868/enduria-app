@@ -163,7 +163,7 @@ else:
     * 📥 Un fichier PDF complet de votre programme prêt à être téléchargé.
     """)
     
-    LIEN_STRIPE = "https://buy.stripe.com/TON_LIEN_STRIPE_ICI" 
+    LIEN_STRIPE = "https://buy.stripe.com/test_28E14oco2gZvaTN8l17Re00" 
     st.link_button("💳 DÉBLOQUER MON PLAN (19€) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
     st.caption("🔒 Paiement 100% sécurisé via Stripe. Vous serez redirigé automatiquement ici après le paiement.")
     generer = False
