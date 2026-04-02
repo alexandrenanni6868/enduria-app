@@ -144,20 +144,21 @@ st.divider()
 st.header("🎯 3. Votre Objectif")
 duree_plan = st.slider("Durée du plan souhaitée (semaines)", 4, 52, 6)
 
+if sport_principal == "Cyclisme":
+    default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
+else:
+    default_objectif = "Faire un semi-marathon en moins d'1h30"
+
+objectif = st.text_input("Détaillez votre objectif :", default_objectif)
+
+st.divider()
+
 TOKEN_SECRET = "PROCOACH2026SECURE" 
 parametres_url = st.query_params
 a_paye = parametres_url.get("token") == TOKEN_SECRET
 
 if a_paye:
-    st.success("✅ Accès débloqué ! Précisez votre objectif final ci-dessous.")
-    
-    if sport_principal == "Cyclisme":
-        default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
-    else:
-        default_objectif = "Faire un semi-marathon en moins d'1h30"
-
-    objectif = st.text_input("Détaillez votre objectif :", default_objectif)
-    st.write("") # Petit espace
+    st.success("✅ Accès débloqué ! Vous pouvez lancer la génération.")
     generer = st.button("⚡ GÉNÉRER MON PLAN SUR-MESURE", type="primary", use_container_width=True)
 
 else:
@@ -170,7 +171,7 @@ else:
     * 📥 Votre programme complet en PDF haute qualité.
     """)
     
-    # Mets ton vrai lien Stripe à 4,99€ ici
+    # RAPPEL : REMPLACE PAR TON VRAI LIEN STRIPE ICI 👇
     LIEN_STRIPE = "https://buy.stripe.com/TON_LIEN_STRIPE_ICI" 
     
     st.link_button("💳 DÉBLOQUER MON PLAN (4,99 €) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
@@ -178,7 +179,7 @@ else:
     generer = False
 
 # ==========================================
-# 4. LOGIQUE MÉTIER & GÉNÉRATION
+# 4. LOGIQUE MÉTIER & DONNÉES ZONES/LEXIQUE
 # ==========================================
 
 if generer:
