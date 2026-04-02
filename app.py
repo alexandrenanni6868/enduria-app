@@ -230,7 +230,6 @@ if generer:
             ]
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT LES NIVEAUX 'i' (i1 à i7) OU L'ÉCHELLE RPE. EXEMPLE : '3 séries de (3 min à i4 puis 1 min30 de trot en i1)'."
 
-
     # --- APPEL OPENAI ---
     dispos_str = ", ".join([f"{j}: {h}h" for j, h in jours_dispos.items() if h > 0])
     full_plan = {"titre": f"Prépa {objectif}", "weeks": []}
@@ -248,6 +247,7 @@ if generer:
             
             status.write(f"Rédaction des semaines {start_w} à {end_w}...")
             
+            # 🚨 CHANGEMENT ICI : Le prompt force la nomenclature du repos
             prompt = f"""
             Tu es un coach expert en {sport_principal} ({sport}).
             Athlète : {sexe}, Niveau : {niveau}.
@@ -257,7 +257,7 @@ if generer:
             1. DÉTERMINISME ABSOLU : Temps, intensité et répétitions précis.
             2. FORMAT : La liste 'details' contient des phrases.
             3. NOMENCLATURE : {prompt_style_instruction}
-            4. REPOS : Génère une séance pour chaque jour dispo. Si repos nécessaire, titre "Repos" avec nutrition "Hydratation".
+            4. REPOS : Si un jour est un jour de repos, mets "titre": "Repos", "duree_totale": "-", "nutrition": "Hydratation optimale", et "details": ["Profitez de cette journée pour récupérer."].
             
             JSON ATTENDU :
             {{
@@ -383,8 +383,13 @@ if generer:
                 
                 pdf.set_text_color(255, 75, 75)
                 pdf.cell(30, 8, f" {jour_txt} ", 0, 0, 'L', fill=True)
+                
+                # 🚨 CHANGEMENT ICI : Logique d'affichage pour les jours de repos
                 pdf.set_text_color(40, 40, 40)
-                pdf.cell(0, 8, f"{titre_txt}  |  Durée : {duree_txt}", 0, 1, 'L', fill=True)
+                if "repos" in titre_txt.lower() or duree_txt == "-":
+                    pdf.cell(0, 8, f"{titre_txt}", 0, 1, 'L', fill=True)
+                else:
+                    pdf.cell(0, 8, f"{titre_txt}  |  Durée : {duree_txt}", 0, 1, 'L', fill=True)
                 
                 pdf.set_text_color(230, 120, 0)
                 pdf.set_font("Arial", "B", 9)
