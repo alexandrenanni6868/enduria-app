@@ -57,119 +57,128 @@ st.markdown("""
         margin-bottom: 30px;
     }
     .lexique { font-size: 0.85em; color: #555; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #eee; margin-top: 10px;}
+    
+    /* Ajustements Mobile */
+    .stNumberInput {margin-bottom: 10px;}
 </style>
 """, unsafe_allow_html=True)
 
+st.title("⚡ ENDURIA")
+st.markdown("Générez votre plan d'entraînement sur-mesure optimisé par l'IA.")
+st.divider()
+
 # ==========================================
-# 2. SIDEBAR
+# 2. CONFIGURATION SUR LA PAGE PRINCIPALE (MOBILE FIRST)
 # ==========================================
-with st.sidebar:
-    st.title("EndurIA")
-    st.markdown("---")
+
+st.header("👤 1. Votre Profil")
+
+sport_principal = st.radio("Quel est votre sport ?", ["Cyclisme", "Course à pied"], horizontal=True)
+
+if sport_principal == "Cyclisme":
+    sport = st.selectbox("Discipline", ["Cyclisme sur route", "Gravel", "VTT XC", "Cyclocross"])
+    sexe = st.radio("Sexe", ["Homme", "Femme"], horizontal=True)
     
-    sport_principal = st.radio("Quel est votre sport ?", ["Cyclisme", "Course à pied"])
-    st.markdown("---")
+    st.markdown("**⚡ Profil de Puissance**")
+    avec_capteur = st.toggle("J'ai un Capteur de Puissance", value=True)
     
-    if sport_principal == "Cyclisme":
-        sport = st.selectbox("Discipline", ["Cyclisme sur route", "Gravel", "VTT XC", "Cyclocross"])
-        sexe = st.radio("Sexe", ["Homme", "Femme"])
-        
-        st.markdown("### ⚡ Profil de Puissance")
-        avec_capteur = st.toggle("J'ai un Capteur de Puissance", value=True)
-        
-        if avec_capteur:
+    if avec_capteur:
+        cols_p = st.columns(2)
+        with cols_p[0]:
             ftp = st.number_input("FTP (Watts)", value=250, step=5)
+        with cols_p[1]:
             poids = st.number_input("Poids (kg)", value=70, step=1)
-            wkg = round(ftp/poids, 2)
-            st.metric("Rapport Poids/Puissance à FTP", f"{wkg} W/kg")
-        else:
-            ftp = None
-            st.info("Le plan sera basé sur vos sensations (1-10).")
-            
-    else:  
-        sport = st.selectbox("Discipline", ["Course sur route", "Trail", "Ultra trail"])
-        sexe = st.radio("Sexe", ["Homme", "Femme"])
+        wkg = round(ftp/poids, 2)
+        st.info(f"📊 Rapport Poids/Puissance à FTP : **{wkg} W/kg**")
+    else:
+        ftp = None
+        st.info("💡 Le plan sera basé sur vos sensations (Échelle RPE 1-10).")
         
-        st.markdown("### 🏃 Profil VMA")
-        avec_vma = st.toggle("Je connais ma VMA", value=True)
-        
-        if avec_vma:
-            vma = st.number_input("VMA (Vitesse Maximale Aérobie en km/h)", value=15.0, step=0.5)
-        else:
-            vma = None
-            st.info("Le plan sera basé sur les niveaux d'intensité (i1 à i7) et vos sensations (RPE 1-10).")
+else:  
+    sport = st.selectbox("Discipline", ["Course sur route", "Trail", "Ultra trail"])
+    sexe = st.radio("Sexe", ["Homme", "Femme"], horizontal=True)
+    
+    st.markdown("**🏃 Profil VMA**")
+    avec_vma = st.toggle("Je connais ma VMA", value=True)
+    
+    if avec_vma:
+        vma = st.number_input("VMA (Vitesse Maximale Aérobie en km/h)", value=15.0, step=0.5)
+    else:
+        vma = None
+        st.info("💡 Le plan sera basé sur les niveaux d'intensité (i1 à i7) et vos sensations (RPE 1-10).")
 
-    st.markdown("---")
-    
-    niveau = st.selectbox("Niveau d'entraînement avant le plan", [
-        "Je m'entraînais moins de 2h par semaine", 
-        "Je m'entraînais entre 3h et 5h par semaine", 
-        "Je m'entraînais entre 5h et 10h par semaine", 
-        "Je m'entraînais entre 10h et 15h par semaine", 
-        "Je m'entraînais entre 15h et 20h par semaine"
-    ])
-    
-    st.markdown("### 📅 Disponibilités")
-    st.caption("Indiquez le nombre d'heures où vous êtes disponible chaque jour.")
-    
-    jours_dispos = {}
-    cols_d = st.columns(2)
-    with cols_d[0]:
-        jours_dispos["Lundi"] = st.number_input("Lun (h)", 0.0, 10.0, 0.0, 0.5)
-        jours_dispos["Mardi"] = st.number_input("Mar (h)", 0.0, 10.0, 1.0, 0.5)
-        jours_dispos["Mercredi"] = st.number_input("Mer (h)", 0.0, 10.0, 0.0, 0.5)
-        jours_dispos["Jeudi"] = st.number_input("Jeu (h)", 0.0, 10.0, 1.0, 0.5)
-    with cols_d[1]:
-        jours_dispos["Vendredi"] = st.number_input("Ven (h)", 0.0, 10.0, 0.0, 0.5)
-        jours_dispos["Samedi"] = st.number_input("Sam (h)", 0.0, 10.0, 2.0, 0.5)
-        jours_dispos["Dimanche"] = st.number_input("Dim (h)", 0.0, 10.0, 2.0, 0.5)
+niveau = st.selectbox("Niveau d'entraînement actuel", [
+    "Moins de 2h par semaine", 
+    "Entre 3h et 5h par semaine", 
+    "Entre 5h et 10h par semaine", 
+    "Entre 10h et 15h par semaine", 
+    "Entre 15h et 20h par semaine"
+])
 
-    volume_dispo_total = sum(jours_dispos.values())
-    st.write(f"**Total heures disponibles : {volume_dispo_total}h / semaine**")
-    
-    st.markdown("### 🎯 Objectif")
-    duree_plan = st.slider("Durée plan (semaines)", 4, 52, 6)
+st.divider()
+
+st.header("📅 2. Vos Disponibilités")
+st.caption("Indiquez le nombre d'heures où vous êtes disponible chaque jour.")
+
+jours_dispos = {}
+cols_d1, cols_d2 = st.columns(2)
+with cols_d1:
+    jours_dispos["Lundi"] = st.number_input("Lundi (h)", 0.0, 10.0, 0.0, 0.5)
+    jours_dispos["Mardi"] = st.number_input("Mardi (h)", 0.0, 10.0, 1.0, 0.5)
+    jours_dispos["Mercredi"] = st.number_input("Mercredi (h)", 0.0, 10.0, 0.0, 0.5)
+    jours_dispos["Jeudi"] = st.number_input("Jeudi (h)", 0.0, 10.0, 1.0, 0.5)
+with cols_d2:
+    jours_dispos["Vendredi"] = st.number_input("Vendredi (h)", 0.0, 10.0, 0.0, 0.5)
+    jours_dispos["Samedi"] = st.number_input("Samedi (h)", 0.0, 10.0, 2.0, 0.5)
+    jours_dispos["Dimanche"] = st.number_input("Dimanche (h)", 0.0, 10.0, 2.0, 0.5)
+
+volume_dispo_total = sum(jours_dispos.values())
+st.success(f"**Total : {volume_dispo_total}h / semaine**")
+
+st.divider()
 
 # ==========================================
-# 3. PAGE PRINCIPALE & PAIEMENT STRIPE
+# 3. OBJECTIF & PAIEMENT STRIPE
 # ==========================================
 
-st.title(f"PLANIFICATION {sport.upper()}")
+st.header("🎯 3. Votre Objectif")
+duree_plan = st.slider("Durée du plan souhaitée (semaines)", 4, 52, 6)
 
 TOKEN_SECRET = "PROCOACH2026SECURE" 
 parametres_url = st.query_params
 a_paye = parametres_url.get("token") == TOKEN_SECRET
 
 if a_paye:
-    st.success("✅ Accès débloqué ! Configurez votre objectif ci-dessous pour générer votre plan.")
+    st.success("✅ Accès débloqué ! Précisez votre objectif final ci-dessous.")
     
     if sport_principal == "Cyclisme":
-        label_objectif = "Objectif (Exemples : \"Gagner une course open 3 FFC\", \"Faire la meilleure performance possible à l'étape du Tour 2026 (Cyclosportive)\"...)"
         default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
     else:
-        label_objectif = "Objectif (Exemples : \"Faire moins de 40min au 10km\", \"Pouvoir courir 1h sans m'arrêter\"...)"
         default_objectif = "Faire un semi-marathon en moins d'1h30"
 
-    objectif = st.text_input(label_objectif, default_objectif)
-    generer = st.button("⚡ GÉNÉRER LA STRUCTURE DU PLAN", type="primary", use_container_width=True)
+    objectif = st.text_input("Détaillez votre objectif :", default_objectif)
+    st.write("") # Petit espace
+    generer = st.button("⚡ GÉNÉRER MON PLAN SUR-MESURE", type="primary", use_container_width=True)
 
 else:
-    st.info("💡 Pour générer votre plan d'entraînement sur-mesure, vous devez débloquer l'accès.")
+    st.info("💡 Votre profil est configuré. Débloquez l'accès pour générer votre plan d'entraînement.")
     st.markdown("""
-    **Ce que vous obtenez (4,99€) :**
-    * 🎯 Un plan ultra-personnalisé de 4 à 52 semaines généré par IA.
-    * ⏱️ Une adaptation parfaite à vos disponibilités et votre niveau.
-    * 🍎 Des conseils nutritionnels précis pour chaque séance.
-    * 📥 Un fichier PDF complet de votre programme prêt à être téléchargé.
+    **Ce que vous obtenez (4,99 €) :**
+    * 🎯 Un plan ultra-personnalisé généré par IA.
+    * ⏱️ Une adaptation parfaite à vos disponibilités.
+    * 🍎 Des conseils nutritionnels par séance.
+    * 📥 Votre programme complet en PDF haute qualité.
     """)
     
-    LIEN_STRIPE = "https://buy.stripe.com/test_28E14oco2gZvaTN8l17Re00" 
-    st.link_button("💳 DÉBLOQUER MON PLAN (4,99€) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
-    st.caption("🔒 Paiement 100% sécurisé via Stripe. Vous serez redirigé automatiquement ici après le paiement.")
+    # Mets ton vrai lien Stripe à 4,99€ ici
+    LIEN_STRIPE = "https://buy.stripe.com/TON_LIEN_STRIPE_ICI" 
+    
+    st.link_button("💳 DÉBLOQUER MON PLAN (4,99 €) - Paiement Sécurisé", LIEN_STRIPE, type="primary", use_container_width=True)
+    st.caption("🔒 Paiement 100% sécurisé via Stripe.")
     generer = False
 
 # ==========================================
-# 4. LOGIQUE MÉTIER & DONNÉES ZONES/LEXIQUE
+# 4. LOGIQUE MÉTIER & GÉNÉRATION
 # ==========================================
 
 if generer:
@@ -183,7 +192,7 @@ if generer:
             z5 = [int(ftp * 1.06), int(ftp * 1.20)]; z6 = [int(ftp * 1.21), int(ftp * 1.50)]
             z7 = [int(ftp * 1.51), 9999]
 
-            headers_zones = ["Zone", "Nom", "Vos Watts", "Durée Tenable", "Sensations"]
+            headers_zones = ["Zone", "Nom", "Vos Watts", "Durée", "Sensations"]
             data_zones = [
                 ["Z1", "Récup Active", f"< {z1[1]} W", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
                 ["Z2", "Endurance", f"{z2[0]} - {z2[1]} W", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
@@ -201,7 +210,7 @@ if generer:
             prompt_style_instruction = "UTILISE LA NOTATION 'Z' (Z1, Z2, Z3...). EXEMPLE : '3 séries de (10 min en Z3 puis 5 min de récup en Z1)'."
 
         else:
-            headers_zones = ["Zone", "Intensité", "RPE (1-10)", "Durée Tenable", "Sensations"]
+            headers_zones = ["Zone", "Intensité", "RPE (1-10)", "Durée", "Sensations"]
             data_zones = [
                 ["i1", "Récupération", "1-2", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
                 ["i2", "Endurance", "3-4", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
@@ -220,13 +229,12 @@ if generer:
 
     else:
         if avec_vma:
-            # AJOUT DU " km/h" ICI 👇
             z1 = f"<{round(vma*0.65, 1)} km/h"; z2 = f"{round(vma*0.65, 1)} - {round(vma*0.75, 1)} km/h"
             z3 = f"{round(vma*0.75, 1)} - {round(vma*0.85, 1)} km/h"; z4 = f"{round(vma*0.85, 1)} - {round(vma*0.90, 1)} km/h"
             z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)} km/h"; z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)} km/h"
             z7 = f">{round(vma*1.10, 1)} km/h"
 
-            headers_zones = ["Zone", "Nom", "% VMA", "Vitesse (km/h)", "Sensations"]
+            headers_zones = ["Zone", "Nom", "% VMA", "Vitesse", "Sensations"]
             data_zones = [
                 ["Z1", "Récupération", "< 65%", z1, "Trot très lent, aucune fatigue, respiration nasale aisée."],
                 ["Z2", "Endurance Fondamentale", "65-75%", z2, "Aisance respiratoire totale, conversation parfaitement fluide."],
@@ -244,7 +252,7 @@ if generer:
             prompt_style_instruction = "UTILISE LES % VMA ET ALLURES CIBLES. EXEMPLE : '3 séries de (3 min à 90% VMA puis 1 min30 de trot lent)'."
 
         else:
-            headers_zones = ["Niveau", "Intensité", "RPE (1-10)", "Durée Tenable", "Sensations (Test de la parole)"]
+            headers_zones = ["Niveau", "Intensité", "RPE", "Durée", "Sensations"]
             data_zones = [
                 ["i1", "Récupération", "1-2", "sans limite", "Trot très lent, aucune fatigue, on peut chanter ou parler sans problème."],
                 ["i2", "Endurance Fondamentale", "3-4", "plusieurs heures", "Aisance respiratoire totale, conversation fluide avec d'autres coureurs."],
@@ -262,7 +270,7 @@ if generer:
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT LES NIVEAUX 'i' (i1 à i7) OU L'ÉCHELLE RPE. EXEMPLE : '3 séries de (3 min à i4 puis 1 min30 de trot en i1)'."
 
     # --- GÉNÉRATION HTML POUR LE WEB ---
-    html_zones = '<table class="zone-table"><tr>'
+    html_zones = '<div style="overflow-x:auto;"><table class="zone-table"><tr>'
     for h in headers_zones: html_zones += f"<th>{h}</th>"
     html_zones += "</tr>"
     for i, row in enumerate(data_zones):
@@ -270,7 +278,7 @@ if generer:
         for j, cell in enumerate(row):
             html_zones += f"<td><strong>{cell}</strong></td>" if j==0 else f"<td>{cell}</td>"
         html_zones += "</tr>"
-    html_zones += "</table>"
+    html_zones += "</table></div>"
 
     html_lexique = '<div class="lexique"><strong>📚 GLOSSAIRE :</strong><br>'
     for item in data_lexique:
@@ -282,15 +290,17 @@ if generer:
     full_plan = {"titre": f"Prépa {objectif}", "weeks": []}
     taille_bloc = 4 
     nombre_blocs = math.ceil(duree_plan / taille_bloc)
+    
+    st.divider()
     progress_bar = st.progress(0)
-    status = st.status("🧠 Analyse des disponibilités et rédaction du plan...", expanded=True)
+    status = st.status("🧠 Analyse en cours et rédaction de votre plan...", expanded=True)
     
     try:
         for i in range(nombre_blocs):
             start_w = i * taille_bloc + 1
             end_w = min((i + 1) * taille_bloc, duree_plan)
             
-            status.write(f"Rédaction du bloc semaines {start_w} à {end_w}...")
+            status.write(f"Rédaction des semaines {start_w} à {end_w}...")
             
             prompt = f"""
             Tu es un coach expert en {sport_principal} ({sport}).
@@ -334,7 +344,7 @@ if generer:
         status.update(label="✅ Terminé !", state="complete", expanded=False)
         
         # ==========================================
-        # 5. GÉNÉRATION DU PDF PRO (Arrière-plan)
+        # 5. GÉNÉRATION DU PDF PRO
         # ==========================================
         class PDF(FPDF):
             def header(self):
@@ -360,7 +370,6 @@ if generer:
         pdf = PDF()
         pdf.add_page()
         
-        # --- En-tête Titre ---
         pdf.set_font("Arial", "B", 16)
         pdf.set_text_color(40, 40, 40)
         pdf.cell(0, 10, pdf.clean(f"OBJECTIF : {objectif.upper()}"), 0, 1, 'C')
@@ -371,7 +380,6 @@ if generer:
         pdf.cell(0, 6, pdf.clean(f"{sport_principal} | {sport} | {infos}"), 0, 1, 'C')
         pdf.ln(8)
         
-        # --- Bloc Zones COMPLET (Identique au site) ---
         pdf.set_fill_color(240, 240, 240)
         pdf.set_draw_color(200, 200, 200)
         pdf.set_font("Arial", "B", 10)
@@ -380,7 +388,6 @@ if generer:
         pdf.ln(2)
 
         for row in data_zones:
-            # Ligne avec fond gris clair (Zone | Nom | Valeur | Durée)
             pdf.set_font("Arial", "B", 9)
             pdf.set_fill_color(250, 250, 250)
             pdf.set_text_color(255, 75, 75)
@@ -390,13 +397,11 @@ if generer:
             info_str = f" {row[1]}   |   {row[2]}   |   {row[3]}"
             pdf.cell(0, 6, pdf.clean(info_str), border="RTB", ln=1, fill=True)
             
-            # Ligne descriptive en dessous (Sensations)
             pdf.set_font("Arial", "", 9)
             pdf.set_text_color(80, 80, 80)
             pdf.multi_cell(0, 5, pdf.clean(f"Sensations : {row[4]}"), border="LBR")
             pdf.ln(2)
 
-        # --- Bloc Lexique COMPLET (Identique au site) ---
         pdf.set_fill_color(240, 240, 240)
         pdf.set_font("Arial", "B", 10)
         pdf.set_text_color(40, 40, 40)
@@ -410,7 +415,6 @@ if generer:
             pdf.multi_cell(0, 6, pdf.clean(f": {item[1]}"))
         pdf.ln(8)
         
-        # --- Boucle des Semaines ---
         for week in full_plan['weeks']:
             if pdf.get_y() > 250: pdf.add_page()
             
@@ -458,12 +462,11 @@ if generer:
         pdf_bytes = pdf.output(dest='S').encode('latin-1')
         
         # ==========================================
-        # 6. AFFICHAGE DU BOUTON TÉLÉCHARGEMENT (EN HAUT)
+        # 6. AFFICHAGE DU RÉSULTAT
         # ==========================================
-        st.divider()
-        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez ou rafraîchissez cette page, votre plan sera perdu.")
+        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez cette page, votre plan sera perdu.")
         st.download_button(
-            label="📥 TÉLÉCHARGER LE PDF DU PLAN",
+            label="📥 TÉLÉCHARGER MON PLAN (PDF)",
             data=pdf_bytes,
             file_name=f"EndurIA_Plan_{sport_principal}.pdf",
             mime="application/pdf",
@@ -472,9 +475,6 @@ if generer:
         )
         st.divider()
 
-        # ==========================================
-        # 7. AFFICHAGE WEB (EN BAS)
-        # ==========================================
         st.markdown(f"""
         <div class="preambule-box">
             <h3 style="margin-top:0;">📊 VOS ZONES & LEXIQUE</h3>
@@ -487,22 +487,18 @@ if generer:
             num = week.get('numero', '?')
             with st.expander(f"SEMAINE {num}", expanded=(num==1)):
                 seances = week.get('seances', [])
-                cols = st.columns(len(seances)) if len(seances) <= 4 and len(seances) > 0 else st.columns(3)
                 
-                for i, seance in enumerate(seances):
-                    if len(seances) > 0:
-                        col_to_use = cols[i % 3] if len(seances) > 4 else cols[i]
-                        with col_to_use:
-                            details_raw = seance.get('details', ["Détails non générés."])
-                            steps_html = "".join([f"<li>{step}</li>" for step in details_raw]) if isinstance(details_raw, list) else details_raw
-                            st.markdown(f"""
-                            <div class="seance-card">
-                                <div class="seance-meta">{seance.get('jour', 'Jour ?').upper()} • ⏱️ {seance.get('duree_totale', 'N/A')}</div>
-                                <div class="seance-title">{seance.get('titre', 'Séance')}</div>
-                                <div style="font-size: 0.85em; color: #d35400; margin-bottom: 8px; font-weight: bold;">🍎 Nutrition : {seance.get('nutrition', 'Non spécifiée')}</div>
-                                <div class="seance-steps"><ul>{steps_html}</ul></div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                for seance in seances:
+                    details_raw = seance.get('details', ["Détails non générés."])
+                    steps_html = "".join([f"<li>{step}</li>" for step in details_raw]) if isinstance(details_raw, list) else details_raw
+                    st.markdown(f"""
+                    <div class="seance-card">
+                        <div class="seance-meta">{seance.get('jour', 'Jour ?').upper()} • ⏱️ {seance.get('duree_totale', 'N/A')}</div>
+                        <div class="seance-title">{seance.get('titre', 'Séance')}</div>
+                        <div style="font-size: 0.85em; color: #d35400; margin-bottom: 8px; font-weight: bold;">🍎 Nutrition : {seance.get('nutrition', 'Non spécifiée')}</div>
+                        <div class="seance-steps"><ul>{steps_html}</ul></div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Une erreur est survenue : {e}")
