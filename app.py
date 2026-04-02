@@ -145,7 +145,7 @@ st.header("🎯 3. Votre Objectif")
 duree_plan = st.slider("Durée du plan souhaitée (semaines)", 4, 52, 6)
 
 if sport_principal == "Cyclisme":
-    default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
+    default_objectif = "Exemples : Faire la meilleur performance possible sur la cyclosportive l'étape du tour 2026 / Gagner une course FFC open 3"
 else:
     default_objectif = "Faire un semi-marathon en moins d'1h30"
 
