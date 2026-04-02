@@ -22,42 +22,6 @@ st.markdown("""
     h1, h2, h3 { font-family: 'Helvetica Neue', sans-serif; font-weight: 800; letter-spacing: -1px; }
     h1 { color: #FF4B4B; }
     
-    .seance-card {
-        background-color: #ffffff;
-        border-left: 5px solid #FF4B4B;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        margin-bottom: 10px;
-    }
-    .seance-title { font-weight: bold; font-size: 1.1em; color: #1e1e1e; }
-    .seance-meta { font-size: 0.9em; color: #666; margin-bottom: 5px; }
-    
-    .seance-steps ul { padding-left: 20px; margin-top: 5px; }
-    .seance-steps li { margin-bottom: 8px; color: #333; font-family: 'Verdana', sans-serif; font-size: 0.95em; line-height: 1.4; }
-    
-    .zone-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9em; }
-    .zone-table th { background-color: #f0f2f6; padding: 8px; text-align: left; border-bottom: 2px solid #ddd; }
-    .zone-table td { padding: 8px; border-bottom: 1px solid #eee; }
-    
-    /* Couleurs des Zones */
-    .z1 { border-left: 4px solid #808080; } 
-    .z2 { border-left: 4px solid #32CD32; } 
-    .z3 { border-left: 4px solid #FFD700; } 
-    .z4 { border-left: 4px solid #FF8C00; } 
-    .z5 { border-left: 4px solid #FF0000; } 
-    .z6 { border-left: 4px solid #8B0000; } 
-    .z7 { border-left: 4px solid #800080; } 
-
-    .preambule-box {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-    }
-    .lexique { font-size: 0.85em; color: #555; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #eee; margin-top: 10px;}
-    
     /* Ajustements Mobile */
     .stNumberInput {margin-bottom: 10px;}
 </style>
@@ -145,7 +109,7 @@ st.header("🎯 3. Votre Objectif")
 duree_plan = st.slider("Durée du plan souhaitée (semaines)", 4, 52, 6)
 
 if sport_principal == "Cyclisme":
-    default_objectif = "Exemples : Faire la meilleur performance possible sur la cyclosportive l'étape du tour 2026 / Gagner une course FFC open 3 / Faire le mont Ventoux sans m'arrêter ..."
+    default_objectif = "Faire la meilleure performance possible à ma prochaine cyclosportive"
 else:
     default_objectif = "Faire un semi-marathon en moins d'1h30"
 
@@ -185,7 +149,7 @@ else:
 if generer:
     client = OpenAI(api_key=MA_CLE_SECRETE)
     
-    # --- PRÉPARATION DES DONNÉES (POUR WEB ET PDF) ---
+    # --- PRÉPARATION DES DONNÉES (POUR PDF) ---
     if sport_principal == "Cyclisme":
         if avec_capteur:
             z1 = [0, int(ftp * 0.55)]; z2 = [int(ftp * 0.56), int(ftp * 0.75)]
@@ -193,7 +157,6 @@ if generer:
             z5 = [int(ftp * 1.06), int(ftp * 1.20)]; z6 = [int(ftp * 1.21), int(ftp * 1.50)]
             z7 = [int(ftp * 1.51), 9999]
 
-            headers_zones = ["Zone", "Nom", "Vos Watts", "Durée", "Sensations"]
             data_zones = [
                 ["Z1", "Récup Active", f"< {z1[1]} W", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
                 ["Z2", "Endurance", f"{z2[0]} - {z2[1]} W", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
@@ -211,7 +174,6 @@ if generer:
             prompt_style_instruction = "UTILISE LA NOTATION 'Z' (Z1, Z2, Z3...). EXEMPLE : '3 séries de (10 min en Z3 puis 5 min de récup en Z1)'."
 
         else:
-            headers_zones = ["Zone", "Intensité", "RPE (1-10)", "Durée", "Sensations"]
             data_zones = [
                 ["i1", "Récupération", "1-2", "sans limite", "Très facile ; respiration uniquement par le nez sans souci, tu peux parler en phrase longue sans souci, jambes légères."],
                 ["i2", "Endurance", "3-4", "3h à 10h", "Aisance respiratoire, tu peux tenir une discussion facilement, effort facile mais concentré."],
@@ -235,7 +197,6 @@ if generer:
             z5 = f"{round(vma*0.90, 1)} - {round(vma*1.0, 1)} km/h"; z6 = f"{round(vma*1.0, 1)} - {round(vma*1.10, 1)} km/h"
             z7 = f">{round(vma*1.10, 1)} km/h"
 
-            headers_zones = ["Zone", "Nom", "% VMA", "Vitesse", "Sensations"]
             data_zones = [
                 ["Z1", "Récupération", "< 65%", z1, "Trot très lent, aucune fatigue, respiration nasale aisée."],
                 ["Z2", "Endurance Fondamentale", "65-75%", z2, "Aisance respiratoire totale, conversation parfaitement fluide."],
@@ -253,7 +214,6 @@ if generer:
             prompt_style_instruction = "UTILISE LES % VMA ET ALLURES CIBLES. EXEMPLE : '3 séries de (3 min à 90% VMA puis 1 min30 de trot lent)'."
 
         else:
-            headers_zones = ["Niveau", "Intensité", "RPE", "Durée", "Sensations"]
             data_zones = [
                 ["i1", "Récupération", "1-2", "sans limite", "Trot très lent, aucune fatigue, on peut chanter ou parler sans problème."],
                 ["i2", "Endurance Fondamentale", "3-4", "plusieurs heures", "Aisance respiratoire totale, conversation fluide avec d'autres coureurs."],
@@ -270,21 +230,6 @@ if generer:
             ]
             prompt_style_instruction = "INTERDICTION D'UTILISER 'Z'. UTILISE UNIQUEMENT LES NIVEAUX 'i' (i1 à i7) OU L'ÉCHELLE RPE. EXEMPLE : '3 séries de (3 min à i4 puis 1 min30 de trot en i1)'."
 
-    # --- GÉNÉRATION HTML POUR LE WEB ---
-    html_zones = '<div style="overflow-x:auto;"><table class="zone-table"><tr>'
-    for h in headers_zones: html_zones += f"<th>{h}</th>"
-    html_zones += "</tr>"
-    for i, row in enumerate(data_zones):
-        html_zones += f'<tr class="z{i+1}">'
-        for j, cell in enumerate(row):
-            html_zones += f"<td><strong>{cell}</strong></td>" if j==0 else f"<td>{cell}</td>"
-        html_zones += "</tr>"
-    html_zones += "</table></div>"
-
-    html_lexique = '<div class="lexique"><strong>📚 GLOSSAIRE :</strong><br>'
-    for item in data_lexique:
-        html_lexique += f"<strong>{item[0]}</strong> : {item[1]}<br>"
-    html_lexique += "</div>"
 
     # --- APPEL OPENAI ---
     dispos_str = ", ".join([f"{j}: {h}h" for j, h in jours_dispos.items() if h > 0])
@@ -465,7 +410,9 @@ if generer:
         # ==========================================
         # 6. AFFICHAGE DU RÉSULTAT
         # ==========================================
-        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez cette page, votre plan sera perdu.")
+        st.success("🎉 Votre plan d'entraînement est prêt !")
+        st.warning("⚠️ ATTENTION : Téléchargez votre PDF maintenant. Si vous fermez cette page ou actualisez, votre plan sera perdu.")
+        
         st.download_button(
             label="📥 TÉLÉCHARGER MON PLAN (PDF)",
             data=pdf_bytes,
@@ -474,32 +421,7 @@ if generer:
             type="primary",
             use_container_width=True
         )
-        st.divider()
-
-        st.markdown(f"""
-        <div class="preambule-box">
-            <h3 style="margin-top:0;">📊 VOS ZONES & LEXIQUE</h3>
-            {html_zones}
-            {html_lexique}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        for week in full_plan['weeks']:
-            num = week.get('numero', '?')
-            with st.expander(f"SEMAINE {num}", expanded=(num==1)):
-                seances = week.get('seances', [])
-                
-                for seance in seances:
-                    details_raw = seance.get('details', ["Détails non générés."])
-                    steps_html = "".join([f"<li>{step}</li>" for step in details_raw]) if isinstance(details_raw, list) else details_raw
-                    st.markdown(f"""
-                    <div class="seance-card">
-                        <div class="seance-meta">{seance.get('jour', 'Jour ?').upper()} • ⏱️ {seance.get('duree_totale', 'N/A')}</div>
-                        <div class="seance-title">{seance.get('titre', 'Séance')}</div>
-                        <div style="font-size: 0.85em; color: #d35400; margin-bottom: 8px; font-weight: bold;">🍎 Nutrition : {seance.get('nutrition', 'Non spécifiée')}</div>
-                        <div class="seance-steps"><ul>{steps_html}</ul></div>
-                    </div>
-                    """, unsafe_allow_html=True)
+        st.balloons()
 
     except Exception as e:
         st.error(f"Une erreur est survenue : {e}")
